@@ -1,23 +1,23 @@
 __author__ = 'richard'
 
-import numpy as np
-
-from pymatgen.transformations.standard_transformations import RotationTransformation
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
-from pymatgen.core.surface import SlabGenerator
-from pymatgen.core.operations import SymmOp
+from pymatgen.core.sites import PeriodicSite
+
+from bucking_pbc import fix_pbc
 
 import math
 import numpy as np
 
-from pymatgen import write_structure
-from pymatgen.io.smartio import CifParser
+def cart_to_polar(site, outer_r):
+    site_r = outer_r - site.coords[2]
+    ang = site.frac_coords[1]*2*math.pi
+    return [site.coords[0], site_r*math.cos(ang), site_r*math.sin(ang)]
+
 
 def nanotubes(initial_structure, length, radius):
     new_sites = []
     new_species = []
-    lattice = []
 
     # b will be the circumference of the nt, a will be
     # its length and c will be the thickness of the nt.
@@ -34,23 +34,31 @@ def nanotubes(initial_structure, length, radius):
     # convenient for fractional coordinates.
     min_b = []
     min_c = []
-    coordinates = []
 
-    print(type(super_cell.lattice.matrix[2]))
+    super_cell = fix_pbc(super_cell)
+
+
     for site in super_cell:
-        # Distance of a site to the center of the nt
-        site_r = outer_r - site.coords[2]
-        # print(site.coords[1], site.coords[2])
-        # In radians
-        ang = site.frac_coords[1]*2*math.pi
+        if np.round(site.frac_coords[2], decimals = 5) == 0:
+            rep_site = PeriodicSite(site._species,
+                                    [site.frac_coords[0],
+                                     site.frac_coords[1],
+                                     1],
+                                    super_cell.lattice)
+            print(rep_site.frac_coords)
+            # rep_site.frac_coords[2] = 1
+            print(rep_site.frac_coords)
+            new_site_coord = cart_to_polar(rep_site, outer_r)
+            new_sites.append(new_site_coord)
+            new_species.append(site.specie)
 
-        new_sites.append([site.coords[0],
-                          site_r*math.cos(ang),
-                          site_r*math.sin(ang)])
+        # Distance of a site to the center of the nt
+        new_site_coord = cart_to_polar(site, outer_r)
+        new_sites.append(new_site_coord)
 
         new_species.append(site.specie)
-        min_b.append(site_r*math.cos(ang))
-        min_c.append(site_r*math.sin(ang))
+        min_b.append(new_site_coord[1])
+        min_c.append(new_site_coord[2])
 
     add_c = -1*min(min_c)
     add_b = -1*min(min_b)
@@ -62,8 +70,5 @@ def nanotubes(initial_structure, length, radius):
     latt = Lattice([super_cell.lattice.matrix[0],
                    [0, outer_r*2, 0],
                    [0, 0, outer_r*2]])
-
-    print(latt)
-    print(super_cell.lattice)
 
     return Structure(latt, new_species, new_sites, coords_are_cartesian=True)
