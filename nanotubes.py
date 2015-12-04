@@ -15,7 +15,19 @@ def cart_to_polar(site, outer_r):
     return [site.coords[0], site_r*math.cos(ang), site_r*math.sin(ang)]
 
 
-def nanotubes(initial_structure, length, radius):
+def nanotubes(initial_structure, length, radius, vacuum):
+
+    """
+        Inputs:
+            initial_structure: (structure) The unit cell that the
+                nanotube will be generated from
+            length: (float in Angstroms) The length of the nanotube
+            radius: (float in Angstroms) The radius of the nanotube
+            vacuum: (the width of the vacuum layer to separate the
+                nanotubes from their periodic image to prevent them
+                from interacting with each other
+    """
+
     new_sites = []
     new_species = []
 
@@ -68,7 +80,8 @@ def nanotubes(initial_structure, length, radius):
         new_sites[i][2] = site[2] + add_c
 
     latt = Lattice([super_cell.lattice.matrix[0],
-                   [0, outer_r*2, 0],
-                   [0, 0, outer_r*2]])
+                   [0, outer_r*2+vacuum, 0],
+                   [0, 0, outer_r*2+vacuum]])
 
     return Structure(latt, new_species, new_sites, coords_are_cartesian=True)
+

@@ -3,8 +3,6 @@ __author__ = 'richard'
 from pymatgen.core.structure import Structure
 import numpy as np
 
-# AAAARRRRRGGGGGGHHHHH BUCKING PBC!!!!
-
 def fix_pbc(structure):
     # All sites with c = 1 will be shifted to c = 0 to
     # fix PBC problem and coordinates rounded to five
